@@ -29,7 +29,7 @@ Author: Erika Saul - MIT Licence
 try:
     import tkinter as tk
     from tkinter import filedialog, messagebox, ttk
-except ModuleNotFoundError:         # head-less env (Streamlit Cloud)
+except (ModuleNotFoundError, ImportError):         # head-less env (Streamlit Cloud)
     tk = None      
     filedialog = messagebox = tkk = None                 # dummy placeholder so the rest of the file imports
 import os
