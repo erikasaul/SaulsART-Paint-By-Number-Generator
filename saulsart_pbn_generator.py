@@ -37,13 +37,9 @@ from scipy import ndimage
 from xml.etree.ElementTree import Element, SubElement, ElementTree
 from sklearn.cluster import KMeans
 import threading
-import argparse
-
-# -------------------------------------------------------------------
-# If this file is imported inside Jupyter (Binder), wipe the notebook
-# flags so argparse doesn't choke on them.
-# -------------------------------------------------------------------
 import sys
+import argparse
+# Wipe Jupyter lags if we are inside a notebook
 if "ipykernel_launcher" in sys.argv[0]:
     sys.argv = ["saulsart_pbn_generator.py"]
 
