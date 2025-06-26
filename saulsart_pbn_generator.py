@@ -97,227 +97,231 @@ SIZE_PRESETS = {
 # MAIN APPLICATION
 # =============================================================================
 
-class FastPaintByNumbersApp(tk.Tk):
-    """Fast paint-by-numbers generator application"""
-    
-    def __init__(self):
-        super().__init__()
-        self.title("🎨 Fast Paint-by-Numbers Generator V5")
-        self.geometry("750x700")
-        self.configure(bg='#f0f0f0')
+if tk is not None:
+
+    class FastPaintByNumbersApp(tk.Tk):
+        """Fast paint-by-numbers generator application"""
         
-        self.setup_variables()
-        self.setup_ui()
-        self.check_dependencies()
-    
-    def setup_variables(self):
-        self.image_path = ""
-        self.output_dir = "paint_by_numbers_output"
-        os.makedirs(self.output_dir, exist_ok=True)
+        def __init__(self):
+            super().__init__()
+            self.title("🎨 Fast Paint-by-Numbers Generator V5")
+            self.geometry("750x700")
+            self.configure(bg='#f0f0f0')
+            
+            self.setup_variables()
+            self.setup_ui()
+            self.check_dependencies()
         
-        self.quality_var = tk.StringVar(value="standard")
-        self.size_var = tk.StringVar(value="medium")
-        self.path_var = tk.StringVar(value="No image selected")
-        self.status_var = tk.StringVar(value="Ready")
-        self.progress_var = tk.DoubleVar()
-        self.colors_var = tk.IntVar(value=16)
-        self.detail_var = tk.IntVar(value=100)
-        self.number_color_var = tk.StringVar(value="red")
-        self.font_adjust_var = tk.IntVar(value=0)  # Font size adjustment
-        
-        self.processing_thread = None
-        self.cancel_processing = False
-    
-    def setup_ui(self):
-        main_frame = tk.Frame(self, bg='#f0f0f0')
-        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
-        
-        # Header
-        tk.Label(main_frame, text="🎨 Fast Paint-by-Numbers Generator V5",
-                font=('Arial', 18, 'bold'), bg='#f0f0f0').pack(pady=(0, 20))
-        
-        # Image selection
-        img_frame = tk.LabelFrame(main_frame, text="📷 Image", font=('Arial', 12, 'bold'),
-                                 bg='white', relief='raised', bd=2)
-        img_frame.pack(fill='x', pady=(0, 15))
-        
-        tk.Button(img_frame, text="Select Image", command=self.browse_image,
-                 bg='#2196F3', fg='white', font=('Arial', 11, 'bold'),
-                 relief='flat', padx=20, pady=8).pack(pady=10)
-        
-        tk.Label(img_frame, textvariable=self.path_var, bg='white',
-                font=('Arial', 9), fg='#666').pack(pady=(0, 10))
-        
-        # Settings
-        settings_frame = tk.LabelFrame(main_frame, text="⚙️ Settings", 
-                                      font=('Arial', 12, 'bold'),
-                                      bg='white', relief='raised', bd=2)
-        settings_frame.pack(fill='x', pady=(0, 15))
-        
-        settings_inner = tk.Frame(settings_frame, bg='white')
-        settings_inner.pack(padx=15, pady=10)
-        
-        # Quality preset
-        # tk.Label(settings_inner, text="Quality:", font=('Arial', 10, 'bold'),
-                # bg='white').grid(row=0, column=0, sticky='w', padx=5)
-        # ttk.Combobox(settings_inner, textvariable=self.quality_var,
-                    # values=[f"{k}: {v['description']}" for k, v in QUALITY_PRESETS.items()],
-                    # state="readonly", width=25).grid(row=0, column=1, padx=5)
-        
-        # Size
-        # tk.Label(settings_inner, text="Size:", font=('Arial', 10, 'bold'),
-                # bg='white').grid(row=1, column=0, sticky='w', padx=5, pady=5)
-        # ttk.Combobox(settings_inner, textvariable=self.size_var,
-                    # values=[f"{k}: {v['description']}" for k, v in SIZE_PRESETS.items()],
-                    # state="readonly", width=25).grid(row=1, column=1, padx=5, pady=5)
-        
-        # Colors
-        tk.Label(settings_inner, text="Colors:", font=('Arial', 10, 'bold'),
-                bg='white').grid(row=0, column=0, sticky='w', padx=5)
-        tk.Scale(settings_inner, from_=2, to=50, orient='horizontal',
-                variable=self.colors_var, length=200, bg='white').grid(row=0, column=1, padx=5)
-        
-        # Min area
-        tk.Label(settings_inner, text="Min Area:", font=('Arial', 10, 'bold'),
-                bg='white').grid(row=1, column=0, sticky='w', padx=5)
-        tk.Scale(settings_inner, from_=20, to=1000, orient='horizontal',
-                variable=self.detail_var, length=200, bg='white').grid(row=1, column=1, padx=5)
-        
-        # Number color
-        tk.Label(settings_inner, text="Number Color:", font=('Arial', 10, 'bold'),
-                bg='white').grid(row=2, column=0, sticky='w', padx=5, pady=5)
-        color_frame = tk.Frame(settings_inner, bg='white')
-        color_frame.grid(row=2, column=1, padx=5, pady=5, sticky='w')
-        
-        for color in ["red", "black", "blue", "green"]:
-            tk.Radiobutton(color_frame, text=color.capitalize(), variable=self.number_color_var,
-                          value=color, bg='white').pack(side='left', padx=5)
-        
-        # Font size adjustment
-        tk.Label(settings_inner, text="Font Size:", font=('Arial', 10, 'bold'),
-                bg='white').grid(row=3, column=0, sticky='w', padx=5, pady=5)
-        font_frame = tk.Frame(settings_inner, bg='white')
-        font_frame.grid(row=3, column=1, padx=5, pady=5, sticky='w')
-        tk.Scale(font_frame, from_=-2, to=2, orient='horizontal',
-                variable=self.font_adjust_var, length=150, bg='white',
-                showvalue=False).pack(side='left')
-        tk.Label(font_frame, text="smaller ← → larger", font=('Arial', 8),
-                bg='white', fg='#666').pack(side='left', padx=5)
-        
-        # Process button
-        button_frame = tk.Frame(main_frame, bg='#f0f0f0')
-        button_frame.pack(pady=10)
-        
-        self.generate_btn = tk.Button(button_frame, text="🚀 Generate",
-                                     command=self.process_image,
-                                     bg='#4CAF50', fg='white',
-                                     font=('Arial', 14, 'bold'),
-                                     relief='flat', padx=30, pady=12)
-        self.generate_btn.pack(side='left', padx=5)
-        
-        self.cancel_btn = tk.Button(button_frame, text="Cancel",
-                                   command=self.cancel_processing,
-                                   bg='#F44336', fg='white',
-                                   font=('Arial', 12, 'bold'),
-                                   relief='flat', padx=20, pady=10)
-        
-        # Progress
-        progress_frame = tk.LabelFrame(main_frame, text="📊 Progress",
-                                      font=('Arial', 12, 'bold'),
-                                      bg='white', relief='raised', bd=2)
-        progress_frame.pack(fill='both', expand=True, pady=(0, 10))
-        
-        ttk.Progressbar(progress_frame, variable=self.progress_var,
-                       maximum=100).pack(fill='x', padx=15, pady=(10, 5))
-        
-        self.log_text = tk.Text(progress_frame, height=8, wrap='word',
-                               font=('Consolas', 9), bg='#f8f8f8')
-        self.log_text.pack(fill='both', expand=True, padx=15, pady=(5, 10))
-        
-        # Status bar
-        tk.Label(main_frame, textvariable=self.status_var, 
-                font=('Arial', 9), bg='#e0e0e0',
-                anchor='w').pack(fill='x')
-    
-    def check_dependencies(self):
-        try:
-            import cv2
-            import sklearn
-            self.log_message("✅ Dependencies OK")
-            self.log_message("🎨 Ready to generate paint-by-numbers!")
-            self.log_message("📌 Numbers: tiny red text (4-10pt)")
-            self.log_message("💡 Use font slider if numbers don't fit")
-        except ImportError:
-            self.log_message("❌ Missing dependencies")
-            self.generate_btn.config(state='disabled')
-    
-    def log_message(self, msg):
-        timestamp = time.strftime("%H:%M:%S")
-        self.log_text.insert('end', f"[{timestamp}] {msg}\n")
-        self.log_text.see('end')
-        self.update_idletasks()
-    
-    def browse_image(self):
-        file_path = filedialog.askopenfilename(
-            title="Select Image",
-            filetypes=[("Images", "*.png *.jpg *.jpeg *.bmp"), ("All", "*.*")]
-        )
-        if file_path:
-            self.image_path = file_path
-            self.path_var.set(f"Selected: {os.path.basename(file_path)}")
-            self.log_message(f"📷 Loaded: {os.path.basename(file_path)}")
-    
-    def cancel_processing(self):
-        self.cancel_processing = True
-        self.cancel_btn.pack_forget()
-    
-    def process_image(self):
-        if not self.image_path:
-            messagebox.showwarning("No Image", "Please select an image first")
-            return
-        
-        self.generate_btn.config(state='disabled')
-        self.cancel_btn.pack(side='left', padx=5)
-        
-        self.processing_thread = threading.Thread(target=self._process_thread, daemon=True)
-        self.processing_thread.start()
-    
-    def _process_thread(self):
-        try:
+        def setup_variables(self):
+            self.image_path = ""
+            self.output_dir = "paint_by_numbers_output"
+            os.makedirs(self.output_dir, exist_ok=True)
+            
+            self.quality_var = tk.StringVar(value="standard")
+            self.size_var = tk.StringVar(value="medium")
+            self.path_var = tk.StringVar(value="No image selected")
+            self.status_var = tk.StringVar(value="Ready")
+            self.progress_var = tk.DoubleVar()
+            self.colors_var = tk.IntVar(value=16)
+            self.detail_var = tk.IntVar(value=100)
+            self.number_color_var = tk.StringVar(value="red")
+            self.font_adjust_var = tk.IntVar(value=0)  # Font size adjustment
+            
+            self.processing_thread = None
             self.cancel_processing = False
-            self.log_message("\n" + "="*50)
-            self.log_message("🚀 STARTING FAST PAINT-BY-NUMBERS")
-            
-            # Get settings
-            quality_key = self.quality_var.get().split(':')[0]
-            size_key = self.size_var.get().split(':')[0]
-            
-            config = QUALITY_PRESETS[quality_key].copy()
-            config['n_colors'] = self.colors_var.get()
-            config['min_area'] = self.detail_var.get()
-            config['number_color'] = self.number_color_var.get()
-            config['font_adjust'] = self.font_adjust_var.get()  # Add font adjustment
-            
-            size_config = SIZE_PRESETS[size_key]
-            
-            # Process
-            processor = FastProcessor(self, config, size_config)
-            base_name = os.path.splitext(os.path.basename(self.image_path))[0]
-            processor.generate(self.image_path, base_name)
-            
-            if not self.cancel_processing:
-                self.log_message("✅ COMPLETE!")
-                messagebox.showinfo("Success", 
-                    f"Paint-by-numbers generated!\n\nOutput: {self.output_dir}/{base_name}/")
-            
-        except Exception as e:
-            self.log_message(f"❌ Error: {str(e)}")
-            messagebox.showerror("Error", str(e))
         
-        finally:
-            self.generate_btn.config(state='normal')
+        def setup_ui(self):
+            main_frame = tk.Frame(self, bg='#f0f0f0')
+            main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+            
+            # Header
+            tk.Label(main_frame, text="🎨 Fast Paint-by-Numbers Generator V5",
+                    font=('Arial', 18, 'bold'), bg='#f0f0f0').pack(pady=(0, 20))
+            
+            # Image selection
+            img_frame = tk.LabelFrame(main_frame, text="📷 Image", font=('Arial', 12, 'bold'),
+                                    bg='white', relief='raised', bd=2)
+            img_frame.pack(fill='x', pady=(0, 15))
+            
+            tk.Button(img_frame, text="Select Image", command=self.browse_image,
+                    bg='#2196F3', fg='white', font=('Arial', 11, 'bold'),
+                    relief='flat', padx=20, pady=8).pack(pady=10)
+            
+            tk.Label(img_frame, textvariable=self.path_var, bg='white',
+                    font=('Arial', 9), fg='#666').pack(pady=(0, 10))
+            
+            # Settings
+            settings_frame = tk.LabelFrame(main_frame, text="⚙️ Settings", 
+                                        font=('Arial', 12, 'bold'),
+                                        bg='white', relief='raised', bd=2)
+            settings_frame.pack(fill='x', pady=(0, 15))
+            
+            settings_inner = tk.Frame(settings_frame, bg='white')
+            settings_inner.pack(padx=15, pady=10)
+            
+            # Quality preset
+            # tk.Label(settings_inner, text="Quality:", font=('Arial', 10, 'bold'),
+                    # bg='white').grid(row=0, column=0, sticky='w', padx=5)
+            # ttk.Combobox(settings_inner, textvariable=self.quality_var,
+                        # values=[f"{k}: {v['description']}" for k, v in QUALITY_PRESETS.items()],
+                        # state="readonly", width=25).grid(row=0, column=1, padx=5)
+            
+            # Size
+            # tk.Label(settings_inner, text="Size:", font=('Arial', 10, 'bold'),
+                    # bg='white').grid(row=1, column=0, sticky='w', padx=5, pady=5)
+            # ttk.Combobox(settings_inner, textvariable=self.size_var,
+                        # values=[f"{k}: {v['description']}" for k, v in SIZE_PRESETS.items()],
+                        # state="readonly", width=25).grid(row=1, column=1, padx=5, pady=5)
+            
+            # Colors
+            tk.Label(settings_inner, text="Colors:", font=('Arial', 10, 'bold'),
+                    bg='white').grid(row=0, column=0, sticky='w', padx=5)
+            tk.Scale(settings_inner, from_=2, to=50, orient='horizontal',
+                    variable=self.colors_var, length=200, bg='white').grid(row=0, column=1, padx=5)
+            
+            # Min area
+            tk.Label(settings_inner, text="Min Area:", font=('Arial', 10, 'bold'),
+                    bg='white').grid(row=1, column=0, sticky='w', padx=5)
+            tk.Scale(settings_inner, from_=20, to=1000, orient='horizontal',
+                    variable=self.detail_var, length=200, bg='white').grid(row=1, column=1, padx=5)
+            
+            # Number color
+            tk.Label(settings_inner, text="Number Color:", font=('Arial', 10, 'bold'),
+                    bg='white').grid(row=2, column=0, sticky='w', padx=5, pady=5)
+            color_frame = tk.Frame(settings_inner, bg='white')
+            color_frame.grid(row=2, column=1, padx=5, pady=5, sticky='w')
+            
+            for color in ["red", "black", "blue", "green"]:
+                tk.Radiobutton(color_frame, text=color.capitalize(), variable=self.number_color_var,
+                            value=color, bg='white').pack(side='left', padx=5)
+            
+            # Font size adjustment
+            tk.Label(settings_inner, text="Font Size:", font=('Arial', 10, 'bold'),
+                    bg='white').grid(row=3, column=0, sticky='w', padx=5, pady=5)
+            font_frame = tk.Frame(settings_inner, bg='white')
+            font_frame.grid(row=3, column=1, padx=5, pady=5, sticky='w')
+            tk.Scale(font_frame, from_=-2, to=2, orient='horizontal',
+                    variable=self.font_adjust_var, length=150, bg='white',
+                    showvalue=False).pack(side='left')
+            tk.Label(font_frame, text="smaller ← → larger", font=('Arial', 8),
+                    bg='white', fg='#666').pack(side='left', padx=5)
+            
+            # Process button
+            button_frame = tk.Frame(main_frame, bg='#f0f0f0')
+            button_frame.pack(pady=10)
+            
+            self.generate_btn = tk.Button(button_frame, text="🚀 Generate",
+                                        command=self.process_image,
+                                        bg='#4CAF50', fg='white',
+                                        font=('Arial', 14, 'bold'),
+                                        relief='flat', padx=30, pady=12)
+            self.generate_btn.pack(side='left', padx=5)
+            
+            self.cancel_btn = tk.Button(button_frame, text="Cancel",
+                                    command=self.cancel_processing,
+                                    bg='#F44336', fg='white',
+                                    font=('Arial', 12, 'bold'),
+                                    relief='flat', padx=20, pady=10)
+            
+            # Progress
+            progress_frame = tk.LabelFrame(main_frame, text="📊 Progress",
+                                        font=('Arial', 12, 'bold'),
+                                        bg='white', relief='raised', bd=2)
+            progress_frame.pack(fill='both', expand=True, pady=(0, 10))
+            
+            ttk.Progressbar(progress_frame, variable=self.progress_var,
+                        maximum=100).pack(fill='x', padx=15, pady=(10, 5))
+            
+            self.log_text = tk.Text(progress_frame, height=8, wrap='word',
+                                font=('Consolas', 9), bg='#f8f8f8')
+            self.log_text.pack(fill='both', expand=True, padx=15, pady=(5, 10))
+            
+            # Status bar
+            tk.Label(main_frame, textvariable=self.status_var, 
+                    font=('Arial', 9), bg='#e0e0e0',
+                    anchor='w').pack(fill='x')
+        
+        def check_dependencies(self):
+            try:
+                import cv2
+                import sklearn
+                self.log_message("✅ Dependencies OK")
+                self.log_message("🎨 Ready to generate paint-by-numbers!")
+                self.log_message("📌 Numbers: tiny red text (4-10pt)")
+                self.log_message("💡 Use font slider if numbers don't fit")
+            except ImportError:
+                self.log_message("❌ Missing dependencies")
+                self.generate_btn.config(state='disabled')
+        
+        def log_message(self, msg):
+            timestamp = time.strftime("%H:%M:%S")
+            self.log_text.insert('end', f"[{timestamp}] {msg}\n")
+            self.log_text.see('end')
+            self.update_idletasks()
+        
+        def browse_image(self):
+            file_path = filedialog.askopenfilename(
+                title="Select Image",
+                filetypes=[("Images", "*.png *.jpg *.jpeg *.bmp"), ("All", "*.*")]
+            )
+            if file_path:
+                self.image_path = file_path
+                self.path_var.set(f"Selected: {os.path.basename(file_path)}")
+                self.log_message(f"📷 Loaded: {os.path.basename(file_path)}")
+        
+        def cancel_processing(self):
+            self.cancel_processing = True
             self.cancel_btn.pack_forget()
-            self.progress_var.set(0)
+        
+        def process_image(self):
+            if not self.image_path:
+                messagebox.showwarning("No Image", "Please select an image first")
+                return
+            
+            self.generate_btn.config(state='disabled')
+            self.cancel_btn.pack(side='left', padx=5)
+            
+            self.processing_thread = threading.Thread(target=self._process_thread, daemon=True)
+            self.processing_thread.start()
+        
+        def _process_thread(self):
+            try:
+                self.cancel_processing = False
+                self.log_message("\n" + "="*50)
+                self.log_message("🚀 STARTING FAST PAINT-BY-NUMBERS")
+                
+                # Get settings
+                quality_key = self.quality_var.get().split(':')[0]
+                size_key = self.size_var.get().split(':')[0]
+                
+                config = QUALITY_PRESETS[quality_key].copy()
+                config['n_colors'] = self.colors_var.get()
+                config['min_area'] = self.detail_var.get()
+                config['number_color'] = self.number_color_var.get()
+                config['font_adjust'] = self.font_adjust_var.get()  # Add font adjustment
+                
+                size_config = SIZE_PRESETS[size_key]
+                
+                # Process
+                processor = FastProcessor(self, config, size_config)
+                base_name = os.path.splitext(os.path.basename(self.image_path))[0]
+                processor.generate(self.image_path, base_name)
+                
+                if not self.cancel_processing:
+                    self.log_message("✅ COMPLETE!")
+                    messagebox.showinfo("Success", 
+                        f"Paint-by-numbers generated!\n\nOutput: {self.output_dir}/{base_name}/")
+                
+            except Exception as e:
+                self.log_message(f"❌ Error: {str(e)}")
+                messagebox.showerror("Error", str(e))
+            
+            finally:
+                self.generate_btn.config(state='normal')
+                self.cancel_btn.pack_forget()
+                self.progress_var.set(0)
+else:
+    FastPaintByNumbersApp = None
 
 # =============================================================================
 # FAST PROCESSING ENGINE
