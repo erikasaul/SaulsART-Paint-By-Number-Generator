@@ -39,6 +39,14 @@ from sklearn.cluster import KMeans
 import threading
 import argparse
 
+# -------------------------------------------------------------------
+# If this file is imported inside Jupyter (Binder), wipe the notebook
+# flags so argparse doesn't choke on them.
+# -------------------------------------------------------------------
+import sys
+if "ipykernel_launcher" in sys.argv[0]:
+    sys.argv = ["saulsart_pbn_generator.py"]
+
 # CLI arguments
 parser = argparse.ArgumentParser(description="Fast Paint-by-Numbers Generator")
 parser.add_argument('-c', '--colors', type=int, default=16, help="Number of colors")
