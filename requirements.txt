@@ -1,0 +1,5 @@
+opencv-python-headless>=4.11,<5
+pillow>=11.0,<12
+numpy>=2.0,<3
+scipy>=1.13,<2
+scikit-learn>=1.6,<1.7
