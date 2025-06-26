@@ -39,6 +39,8 @@ from sklearn.cluster import KMeans
 import threading
 import sys
 import argparse
+import pathlib
+import types
 # Wipe Jupyter lags if we are inside a notebook
 if "ipykernel_launcher" in sys.argv[0]:
     sys.argv = ["saulsart_pbn_generator.py"]
@@ -677,6 +679,54 @@ class FastProcessor:
         
         Image.fromarray(reference).save(output_path, "PNG")
         self.app.log_message("✅ Reference saved")
+
+# ---------------------------------------------------------------------------
+# 🖥️  HEADLESS ENGINE — callable from Streamlit or tests, no Tkinter needed
+# ---------------------------------------------------------------------------
+def generate_pbn(
+    img_path: str,
+    n_colors: int,
+    min_area: int,
+    number_color: str,
+    font_adjust: int,
+    make_svg: bool,
+    output_root: str = "web_output"
+) -> pathlib.Path:
+    """
+    Run FastProcessor without starting the Tk GUI.
+    Returns the path to the output directory that holds PNG/SVG files.
+    """
+    import shutil, itertools, tempfile   # local imports to keep globals clean
+
+    # Build minimal configs -------------------------------------------------
+    cfg = {
+        "n_colors": n_colors,
+        "min_area": min_area,
+        "smoothing": 3,
+        "number_color": number_color,
+        "font_adjust": font_adjust,
+    }
+    size_cfg = {"width": 1600, "height": 2000}
+
+    # Dummy object supplying just what FastProcessor expects ----------------
+    dummy = types.SimpleNamespace(
+        output_dir="web_output",
+        cancel_processing=False,
+        log_message=lambda m: print(m),
+        progress_var=types.SimpleNamespace(set=lambda *a, **k: None),
+        update_idletasks=lambda: None,
+    )
+
+    processor = FastProcessor(dummy, cfg, size_cfg)
+
+    base = pathlib.Path(img_path).stem
+    processor.generate(img_path, base)
+
+    if not make_svg:
+        svg_file = pathlib.Path(output_root) / base / f"{base}_template.svg"
+        svg_file.unlink(missing_ok=True)
+
+    return pathlib.Path(output_root) / base
 
 # =============================================================================
 # MAIN
