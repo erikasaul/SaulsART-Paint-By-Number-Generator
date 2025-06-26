@@ -26,7 +26,11 @@ Running the GUI:
 Author: Erika Saul - MIT Licence
 """
 
-import tkinter as tk
+try:
+    import tkinter as tk
+except ModuleNotFoundError:         # head-less env (Streamlit Cloud)
+    tk = None                       # dummy placeholder so the rest of the file imports
+
 from tkinter import filedialog, messagebox, ttk
 import os
 import time
@@ -737,6 +741,8 @@ def main():
     print("=" * 40)
     
     try:
+        if tk is None: 
+            raise SystemExit("Tkinter not available in this environment.")
         app = FastPaintByNumbersApp()
         print("✅ Ready!")
         print("\nFeatures:")
