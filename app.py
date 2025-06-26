@@ -32,14 +32,25 @@ if upl and st.button("Generate"):
 
         st.success("Done ✔ Scroll down for previews")
 
+        # --------------------------------------------------  show results
         st.subheader("Template")
         st.image(list(out_dir.glob("*_template.png"))[0])
 
         st.subheader("Colour guide")
-        st.image(list(out_dir.glob("*_colours.png"))[0])
+        colour_png = (
+            next(out_dir.glob("*_colours.png"), None)  # UK spelling
+            or next(out_dir.glob("*_colors.png"),  None)  # US spelling
+        )
+        if colour_png:
+            st.image(colour_png)
+        else:
+            st.warning("No colour-guide PNG was generated.")
 
         st.subheader("Reference")
-        st.image(list(out_dir.glob("*_reference.png"))[0])
+        ref_png = next(out_dir.glob("*_reference.png"), None)
+        if ref_png:
+            st.image(ref_png)
+
 
         zip_path = shutil.make_archive(out_dir, "zip", out_dir)
         st.download_button("⭳ Download all assets (.zip)",
